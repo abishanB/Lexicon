@@ -17,6 +17,102 @@
     "#67e8f9",
     "#bef264"
   ];
+  const MIN_CONTENT_WORD_LENGTH = 4;
+  const FRENCH_STOP_WORDS = new Set([
+    "a",
+    "ai",
+    "as",
+    "au",
+    "aux",
+    "ce",
+    "ces",
+    "cette",
+    "d",
+    "de",
+    "des",
+    "du",
+    "elle",
+    "en",
+    "es",
+    "est",
+    "et",
+    "il",
+    "ils",
+    "je",
+    "j",
+    "la",
+    "le",
+    "les",
+    "leur",
+    "lui",
+    "ma",
+    "mes",
+    "mon",
+    "ne",
+    "nous",
+    "on",
+    "ou",
+    "pas",
+    "pour",
+    "qu",
+    "que",
+    "qui",
+    "sa",
+    "se",
+    "ses",
+    "son",
+    "sont",
+    "sur",
+    "te",
+    "tes",
+    "toi",
+    "tu",
+    "un",
+    "une",
+    "vos",
+    "votre",
+    "vous",
+    "y"
+  ]);
+  const ENGLISH_STOP_WORDS = new Set([
+    "a",
+    "am",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "but",
+    "by",
+    "for",
+    "he",
+    "her",
+    "him",
+    "i",
+    "in",
+    "is",
+    "it",
+    "me",
+    "my",
+    "of",
+    "on",
+    "or",
+    "our",
+    "she",
+    "that",
+    "the",
+    "their",
+    "them",
+    "they",
+    "this",
+    "to",
+    "us",
+    "we",
+    "with",
+    "you",
+    "your"
+  ]);
 
   // Lightweight French -> English hints for MVP word matching.
   const FR_TO_EN_HINTS = {
@@ -276,8 +372,8 @@
   }
 
   function buildWordAlignments(frenchTokens, englishTokens) {
-    const frenchWords = frenchTokens.filter((token) => token.type === "word");
-    const englishWords = englishTokens.filter((token) => token.type === "word");
+    const frenchWords = frenchTokens.filter((token) => token.type === "word" && shouldHighlightFrenchWord(token));
+    const englishWords = englishTokens.filter((token) => token.type === "word" && shouldHighlightEnglishWord(token));
     const usedEnglish = new Set();
     const alignments = [];
 
@@ -384,6 +480,26 @@
 
   function looksLikeCognate(word) {
     return word.length >= 5;
+  }
+
+  function shouldHighlightFrenchWord(token) {
+    return shouldHighlightWord(token.normalized, FRENCH_STOP_WORDS);
+  }
+
+  function shouldHighlightEnglishWord(token) {
+    return shouldHighlightWord(token.normalized, ENGLISH_STOP_WORDS);
+  }
+
+  function shouldHighlightWord(word, stopWords) {
+    if (!word) {
+      return false;
+    }
+
+    if (stopWords.has(word)) {
+      return false;
+    }
+
+    return word.length >= MIN_CONTENT_WORD_LENGTH;
   }
 
   function showError(error) {
