@@ -10,6 +10,8 @@ let currentTabId = null;
 let finalTranscript = "";
 let interimTranscript = "";
 let deepgramApiKey = "";
+let playbackAudio = null;
+let playbackStream = null;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || message.target !== "offscreen") {
@@ -80,6 +82,7 @@ async function startOffscreenCapture({ streamId, tabId }) {
   });
 
   console.log("[LinguaLens] Got media stream", mediaStream);
+  startLocalPlayback(mediaStream);
 
   deepgramSocket = new WebSocket(DEEPGRAM_URL, ["token", deepgramApiKey]);
 
@@ -233,6 +236,7 @@ async function stopOffscreenCapture() {
   }
 
   mediaStream = null;
+  stopLocalPlayback();
   currentTabId = null;
   finalTranscript = "";
   interimTranscript = "";
@@ -268,6 +272,38 @@ function getSupportedMimeType() {
   ];
 
   return mimeTypes.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+}
+
+function startLocalPlayback(stream) {
+  stopLocalPlayback();
+
+  playbackStream = new MediaStream(stream.getAudioTracks());
+  playbackAudio = new Audio();
+  playbackAudio.srcObject = playbackStream;
+  playbackAudio.autoplay = true;
+  playbackAudio.muted = false;
+
+  const playPromise = playbackAudio.play();
+
+  if (playPromise && typeof playPromise.catch === "function") {
+    playPromise.catch((error) => {
+      console.warn("[LinguaLens] Local playback could not start", error);
+    });
+  }
+}
+
+function stopLocalPlayback() {
+  if (playbackAudio) {
+    playbackAudio.pause();
+    playbackAudio.srcObject = null;
+  }
+
+  if (playbackStream) {
+    playbackStream.getTracks().forEach((track) => track.stop());
+  }
+
+  playbackAudio = null;
+  playbackStream = null;
 }
 
 async function loadDeepgramApiKey() {
