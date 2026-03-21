@@ -1,0 +1,54 @@
+#lingualens-overlay {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  width: min(720px, calc(100vw - 32px));
+  z-index: 2147483647;
+  pointer-events: none;
+}
+
+.lingualens-hidden {
+  display: none;
+}
+
+.lingualens-caption {
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.84);
+  color: #ffffff;
+  text-align: center;
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.35);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.lingualens-caption.lingualens-final {
+  background: rgba(17, 24, 39, 0.9);
+}
+
+.lingualens-caption.lingualens-error {
+  background: rgba(127, 29, 29, 0.88);
+}
+
+.lingualens-text {
+  display: block;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  #lingualens-overlay {
+    bottom: 20px;
+    width: calc(100vw - 20px);
+  }
+
+  .lingualens-caption {
+    font-size: 19px;
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+}

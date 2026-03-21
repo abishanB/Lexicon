@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LinguaLens</title>
+    <style>
+      body {
+        width: 280px;
+        margin: 0;
+        padding: 16px;
+        font-family: Arial, sans-serif;
+        background: #111827;
+        color: #f9fafb;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      p {
+        margin: 0 0 12px;
+        color: #cbd5e1;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .buttons {
+        display: flex;
+        gap: 8px;
+      }
+
+      button {
+        flex: 1;
+        border: 0;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      #startBtn {
+        background: #22c55e;
+        color: #052e16;
+      }
+
+      #stopBtn {
+        background: #ef4444;
+        color: #fff;
+      }
+
+      #status {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.08);
+        font-size: 13px;
+        color: #e2e8f0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>LinguaLens</h1>
+    <p>Capture this tab's audio and render live subtitles on the current page.</p>
+    <div class="buttons">
+      <button id="startBtn">Start</button>
+      <button id="stopBtn">Stop</button>
+    </div>
+    <div id="status">Checking status...</div>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "LinguaLens",
+  "version": "0.1.0",
+  "description": "Capture active tab audio, transcribe it with Deepgram, and show live subtitles on the page.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabCapture",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "https://api.deepgram.com/*",
+    "wss://api.deepgram.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LinguaLens"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "styles.css"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}
