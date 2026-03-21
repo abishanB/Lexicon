@@ -7,6 +7,7 @@ const state = {
   tabId: null,
   lastTranscript: "",
   lastTranslation: "",
+  lastLanguage: "",
   lastError: "",
   createdAt: null,
   latestSegmentId: 0,
@@ -116,6 +117,7 @@ async function startCapture() {
   state.tabId = tab.id;
   state.lastTranscript = "";
   state.lastTranslation = "";
+  state.lastLanguage = "";
   state.lastError = "";
   state.createdAt = Date.now();
   state.latestSegmentId = 0;
@@ -176,6 +178,7 @@ async function stopCapture() {
   state.tabId = null;
   state.lastTranscript = "";
   state.lastTranslation = "";
+  state.lastLanguage = "";
   state.lastError = "";
   state.createdAt = null;
   state.latestSegmentId = 0;
@@ -195,6 +198,7 @@ function handleOffscreenStatus(message) {
     state.isRecording = false;
     state.tabId = null;
     state.lastTranslation = "";
+    state.lastLanguage = "";
     state.createdAt = null;
     state.latestSegmentId = 0;
     state.pendingTranslations = {};
@@ -209,6 +213,7 @@ function handleOffscreenStatus(message) {
 
 function handleTranscriptUpdate(message) {
   state.lastTranscript = message.text || "";
+  state.lastLanguage = normalizeLanguageCode(message.language);
   state.latestSegmentId = Math.max(state.latestSegmentId, Number(message.segmentId) || 0);
 
   if (typeof state.tabId !== "number") {
@@ -220,7 +225,8 @@ function handleTranscriptUpdate(message) {
     originalText: message.text || "",
     translatedText: "",
     isFinal: Boolean(message.isFinal),
-    segmentId: Number(message.segmentId) || 0
+    segmentId: Number(message.segmentId) || 0,
+    language: state.lastLanguage
   };
 
   sendMessageToTab(state.tabId, payload).catch((error) => {
@@ -228,6 +234,14 @@ function handleTranscriptUpdate(message) {
   });
 
   if (!message.isFinal || !message.text || !TRANSLATION_ENABLED) {
+    return;
+  }
+
+  if (!shouldTranslateSegment(state.lastLanguage)) {
+    console.log("[LinguaLens] Skipping translation for non-French segment", {
+      language: state.lastLanguage,
+      text: message.text
+    });
     return;
   }
 
@@ -257,6 +271,7 @@ function getPublicState() {
     tabId: state.tabId,
     lastTranscript: state.lastTranscript,
     lastTranslation: state.lastTranslation,
+    lastLanguage: state.lastLanguage,
     lastError: state.lastError,
     createdAt: state.createdAt
   };
@@ -384,4 +399,12 @@ async function requestTranslation(text) {
 
   const payload = await response.json();
   return (payload.translatedText || "").trim();
+}
+
+function normalizeLanguageCode(language) {
+  return (language || "").trim().toLowerCase();
+}
+
+function shouldTranslateSegment(language) {
+  return normalizeLanguageCode(language).startsWith("fr");
 }

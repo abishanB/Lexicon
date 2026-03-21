@@ -1,6 +1,6 @@
 const DEEPGRAM_URL =
-  // TODO: Tune model, language, and endpointing settings once translation/language features are added.
-  "wss://api.deepgram.com/v1/listen?model=nova-2&language=fr&interim_results=true&smart_format=true&endpointing=150";
+  // Use Deepgram multilingual streaming so each finalized segment can be routed by dominant language.
+  "wss://api.deepgram.com/v1/listen?model=nova-3&language=multi&interim_results=true&smart_format=true&endpointing=100";
 const MEDIA_RECORDER_TIMESLICE_MS = 100;
 
 let mediaStream = null;
@@ -169,7 +169,9 @@ function handleDeepgramMessage(data) {
   console.log("[LinguaLens] Deepgram event", data);
 
   if (data.type === "Results") {
-    const transcript = data.channel?.alternatives?.[0]?.transcript || "";
+    const alternative = data.channel?.alternatives?.[0];
+    const transcript = alternative?.transcript || "";
+    const detectedLanguage = getDominantLanguage(alternative);
 
     if (!transcript.trim()) {
       return;
@@ -178,12 +180,12 @@ function handleDeepgramMessage(data) {
     if (data.is_final) {
       finalTranscript = transcript.trim();
       interimTranscript = "";
-      emitTranscript(finalTranscript, true);
+      emitTranscript(finalTranscript, true, detectedLanguage);
       return;
     }
 
     interimTranscript = transcript.trim();
-    emitTranscript(interimTranscript, false);
+    emitTranscript(interimTranscript, false, detectedLanguage);
     return;
   }
 
@@ -197,7 +199,7 @@ function handleDeepgramMessage(data) {
   }
 }
 
-function emitTranscript(text, isFinal) {
+function emitTranscript(text, isFinal, language) {
   const normalizedText = (text || "").trim();
 
   if (!normalizedText) {
@@ -211,7 +213,8 @@ function emitTranscript(text, isFinal) {
     tabId: currentTabId,
     text: normalizedText,
     isFinal,
-    segmentId: segmentCounter
+    segmentId: segmentCounter,
+    language: language || ""
   });
 }
 
@@ -365,4 +368,34 @@ function parseEnv(source) {
   }
 
   return result;
+}
+
+function getDominantLanguage(alternative) {
+  if (!alternative) {
+    return "";
+  }
+
+  if (Array.isArray(alternative.languages) && alternative.languages.length > 0) {
+    return alternative.languages[0] || "";
+  }
+
+  const words = Array.isArray(alternative.words) ? alternative.words : [];
+
+  if (words.length === 0) {
+    return "";
+  }
+
+  const counts = {};
+
+  for (const word of words) {
+    const language = word.language || "";
+
+    if (!language) {
+      continue;
+    }
+
+    counts[language] = (counts[language] || 0) + 1;
+  }
+
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
 }
