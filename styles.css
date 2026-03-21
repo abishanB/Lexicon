@@ -53,6 +53,21 @@
   border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
+.lingualens-word,
+.lingualens-punctuation {
+  display: inline;
+}
+
+.lingualens-word {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.lingualens-translation .lingualens-word {
+  color: rgba(226, 232, 240, 0.94);
+  font-weight: 500;
+}
+
 @media (max-width: 640px) {
   #lingualens-overlay {
     bottom: 20px;
