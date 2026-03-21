@@ -1,101 +1,151 @@
 # LexiconAI
 
-LexiconAI is a hackathon-friendly Chrome extension MVP that captures the active tab's audio, streams it to Deepgram for live transcription, and renders the transcript as a floating subtitle overlay on the current page.
+Real-time AI-powered subtitles and translation for any browser tab.
 
-## What This MVP Does
+LexiconAI is a Chrome extension that captures audio from your active tab, transcribes it live using **Deepgram Nova-2**, and translates finalized transcripts from French to English using **Argos Translate** — all in real time.
 
-- Captures audio from the active Chrome tab
-- Streams audio to Deepgram over WebSocket
-- Shows live interim transcript updates
-- Shows final transcript updates
-- Renders subtitles directly on the current webpage
-- Translates finalized French transcript segments to English through a local FastAPI backend
+## How It Works
 
-## What It Does Not Do Yet
+```
+Tab Audio
+  │
+  ▼
+Chrome tabCapture API ──► Offscreen Document
+                              │
+                              │  audio chunks every 250ms
+                              ▼
+                        Deepgram Nova-2 (WebSocket)
+                              │
+                              │  interim + final transcripts
+                              ▼
+                        Background Service Worker
+                              │
+                    ┌─────────┴─────────┐
+                    ▼                   ▼
+            Interim results       Final results
+            (show French)         (send to backend)
+                                        │
+                                        ▼
+                                  FastAPI + Argos Translate
+                                  (French → English, offline)
+                                        │
+                                        ▼
+                                  Content Script
+                                  (subtitle overlay on page)
+```
 
-- Language filtering
-- Language detection
-- Transcript history
-- Persisted settings
+## The AI
 
-## Files
+**Deepgram Nova-2** — A cloud-based end-to-end deep neural network for speech-to-text. Unlike traditional systems that process audio in stages (phonemes → words → grammar), Nova-2 converts raw audio waveforms directly to text, making it faster and more accurate. We use their streaming WebSocket API for sub-second latency.
 
-- `manifest.json`: MV3 manifest
-- `background.js`: service worker that coordinates the session
-- `offscreen.html`: offscreen document shell
-- `offscreen.js`: audio capture and Deepgram live transcription
-- `popup.html`: extension popup UI
-- `popup.js`: popup controls
-- `content.js`: floating subtitle overlay
-- `styles.css`: subtitle styling
-- `.env`: local runtime config for the Deepgram key
-- `backend/`: local FastAPI + Argos Translate backend for French to English
+**Argos Translate** — An open-source neural machine translation library built on the OpenNMT framework. It runs entirely locally — no cloud API, no extra cost, no data leaving the machine. The model translates finalized French transcripts to English through a local FastAPI backend.
+
+## Features
+
+- Live speech-to-text transcription via Deepgram streaming API
+- Real-time French → English translation via Argos Translate
+- Floating subtitle overlay rendered directly on the webpage
+- Interim results update live as the AI refines its predictions
+- Works on any tab playing audio (YouTube, meetings, podcasts, etc.)
+
+## Prerequisites
+
+- Google Chrome
+- [Deepgram API key](https://deepgram.com) (free tier available)
+- Python 3.9+
 
 ## Setup
 
-1. Open `.env`.
-2. Replace `REPLACE_WITH_YOUR_DEEPGRAM_API_KEY` with your real Deepgram API key.
-3. Open Chrome and go to `chrome://extensions`.
-4. Enable `Developer mode`.
-5. Click `Load unpacked`.
-6. Select this folder.
+### 1. Configure the Deepgram API key
 
-## How To Run
+Copy the example env file and add your key:
 
-Start the local translation backend first:
+```bash
+cp .env.example .env
+```
 
-1. Follow the instructions in `backend/README.md`
-2. Run the FastAPI server on `http://localhost:8000`
-
-Then run the extension:
-
-1. Open a tab that is actively playing spoken audio.
-2. Click the LexiconAI extension icon.
-3. Press `Start`.
-4. Grant any Chrome permissions if prompted.
-5. Watch the subtitle overlay appear near the bottom of the page.
-6. Interim transcript shows only the French line.
-7. Finalized French transcript shows the French line first, then the English translation when the backend returns it.
-8. Press `Stop` to end capture and remove the overlay.
-
-## Testing Notes
-
-- This MVP only captures the current active tab's audio.
-- If nothing appears, check:
-  - the page console
-  - the service worker console
-  - the offscreen document console
-- The extension uses `MediaRecorder` with WebM/Opus audio chunks for simplicity.
-- Depending on the page and Chrome version, tab-audio capture behavior can vary slightly.
-- Translation calls are sent only for finalized transcript segments.
-- The backend is local-only and expected at `http://localhost:8000`.
-
-## Debugging
-
-- Popup logs: right-click the popup and inspect it
-- Service worker logs: open the extension details page, then inspect the service worker
-- Content script logs: inspect the active webpage
-- Offscreen logs: inspect extension pages from Chrome's extension debugging tools
-
-## TODO
-
-- Move the Deepgram API key into a safer configuration flow
-- Add transcript buffering for smoother multi-sentence captions
-- Add language selection and detection
-- Expand translation beyond French to English
-- Add a better session state model for popup updates
-- Add reconnection logic for transient WebSocket failures
-
-## Practical MV3 Notes
-
-This MVP uses a background service worker plus an offscreen document because long-running media capture and WebSocket work are not a good fit for a service worker alone. The service worker gets the tab capture stream ID, and the offscreen document turns that into a real media stream for recording and transcription.
-
-## Deepgram Key Location
-
-The Deepgram API key lives in `.env` at the root of the extension:
+Edit `.env` and replace the placeholder with your real Deepgram API key:
 
 ```env
 DEEPGRAM_API_KEY=your_real_key_here
 ```
 
-You can also use `.env.example` as a template.
+### 2. Set up the translation backend
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Install the Argos French → English model:
+
+```bash
+python -c "
+from argostranslate import package
+package.update_package_index()
+pkg = next(p for p in package.get_available_packages()
+           if p.from_code == 'fr' and p.to_code == 'en')
+download_path = pkg.download()
+package.install_from_path(download_path)
+"
+```
+
+Start the backend:
+
+```bash
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+### 3. Load the Chrome extension
+
+1. Open `chrome://extensions`
+2. Enable **Developer mode** (top right)
+3. Click **Load unpacked**
+4. Select this project folder
+
+## Usage
+
+1. Open a tab playing spoken audio (e.g. a French YouTube video)
+2. Click the **LexiconAI** extension icon in the toolbar
+3. Press **Start**
+4. Subtitles appear at the bottom of the page:
+   - Interim results show the French transcript updating in real time
+   - Final results show French + English translation side by side
+5. Press **Stop** to end the session
+
+## Architecture
+
+| Component | File(s) | Role |
+|-----------|---------|------|
+| **Popup** | `popup.html`, `popup.js` | Start/Stop UI and status display |
+| **Background** | `background.js` | Service worker that coordinates all components via Chrome message passing |
+| **Offscreen Document** | `offscreen.html`, `offscreen.js` | Captures tab audio with MediaRecorder, streams to Deepgram over WebSocket |
+| **Content Script** | `content.js`, `styles.css` | Injects floating subtitle overlay into the active webpage |
+| **Translation Backend** | `backend/main.py` | FastAPI server running Argos Translate for French → English |
+| **Config** | `manifest.json`, `.env` | Extension manifest (MV3) and API key configuration |
+
+### Why an offscreen document?
+
+Chrome Manifest V3 uses service workers for the background script, but service workers are ephemeral — Chrome can kill them at any time. Long-running tasks like audio capture and WebSocket connections would break. The offscreen document is a hidden page that stays alive to handle media work.
+
+## Debugging
+
+| What | How |
+|------|-----|
+| Popup logs | Right-click the popup → Inspect |
+| Service worker logs | `chrome://extensions` → LexiconAI → "Inspect views: service worker" |
+| Content script logs | Open DevTools (F12) on the active webpage |
+| Offscreen document logs | `chrome://extensions` → inspect extension pages |
+| Backend logs | Check the terminal running `uvicorn` |
+| Backend health check | `GET http://localhost:8000/health` |
+
+## Tech Stack
+
+- **Chrome Extension** (Manifest V3) — JavaScript, HTML, CSS
+- **Deepgram Nova-2** — real-time speech-to-text AI (cloud, WebSocket)
+- **Argos Translate** — neural machine translation (local, Python)
+- **FastAPI** — Python backend framework
+- **MediaRecorder API** — browser audio capture (WebM/Opus)
