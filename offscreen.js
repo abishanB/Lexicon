@@ -1,6 +1,7 @@
 const DEEPGRAM_URL =
   // TODO: Tune model, language, and endpointing settings once translation/language features are added.
-  "wss://api.deepgram.com/v1/listen?model=nova-2&language=fr&interim_results=true&smart_format=true&endpointing=300";
+  "wss://api.deepgram.com/v1/listen?model=nova-2&language=fr&interim_results=true&smart_format=true&endpointing=150";
+const MEDIA_RECORDER_TIMESLICE_MS = 100;
 
 let mediaStream = null;
 let mediaRecorder = null;
@@ -160,7 +161,7 @@ function startRecorder() {
     console.log("[LinguaLens] MediaRecorder stopped");
   };
 
-  mediaRecorder.start(250);
+  mediaRecorder.start(MEDIA_RECORDER_TIMESLICE_MS);
   console.log("[LinguaLens] MediaRecorder started with mime type", mimeType);
 }
 
