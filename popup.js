@@ -1,11 +1,13 @@
 const startBtn = document.getElementById("startBtn");
 const stopBtn = document.getElementById("stopBtn");
 const statusEl = document.getElementById("status");
+const sourceLanguageSelect = document.getElementById("sourceLanguage");
 const captionSizeInput = document.getElementById("captionSize");
 const captionOpacityInput = document.getElementById("captionOpacity");
 const captionSizeValue = document.getElementById("captionSizeValue");
 const captionOpacityValue = document.getElementById("captionOpacityValue");
 const DEFAULT_SETTINGS = {
+  sourceLanguage: "fr",
   captionSize: 24,
   captionOpacity: 84
 };
@@ -44,6 +46,7 @@ stopBtn.addEventListener("click", async () => {
   }
 });
 
+sourceLanguageSelect.addEventListener("change", handleSettingsChange);
 captionSizeInput.addEventListener("input", handleSettingsChange);
 captionOpacityInput.addEventListener("input", handleSettingsChange);
 
@@ -72,7 +75,8 @@ function updateFromState(state) {
   }
 
   if (state.isRecording) {
-    setStatus("Recording active tab audio and streaming to Deepgram");
+    const selectedLanguage = state.selectedSourceLanguage === "ja" ? "Japanese" : "French";
+    setStatus(`Recording ${selectedLanguage} audio and streaming to Deepgram`);
     return;
   }
 
@@ -87,10 +91,12 @@ async function loadSettings() {
   try {
     const stored = await chrome.storage.local.get(DEFAULT_SETTINGS);
     const settings = {
+      sourceLanguage: stored.sourceLanguage || DEFAULT_SETTINGS.sourceLanguage,
       captionSize: Number(stored.captionSize) || DEFAULT_SETTINGS.captionSize,
       captionOpacity: Number(stored.captionOpacity) || DEFAULT_SETTINGS.captionOpacity
     };
 
+    sourceLanguageSelect.value = settings.sourceLanguage;
     captionSizeInput.value = String(settings.captionSize);
     captionOpacityInput.value = String(settings.captionOpacity);
     updateSettingsLabels(settings);
@@ -102,6 +108,7 @@ async function loadSettings() {
 
 async function handleSettingsChange() {
   const settings = {
+    sourceLanguage: sourceLanguageSelect.value,
     captionSize: Number(captionSizeInput.value),
     captionOpacity: Number(captionOpacityInput.value)
   };

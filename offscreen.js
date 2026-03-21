@@ -1,6 +1,3 @@
-const DEEPGRAM_URL =
-  // Use Deepgram multilingual streaming so each finalized segment can be routed by dominant language.
-  "wss://api.deepgram.com/v1/listen?model=nova-3&language=multi&interim_results=true&smart_format=true&endpointing=50";
 const MEDIA_RECORDER_TIMESLICE_MS = 60;
 
 let mediaStream = null;
@@ -14,6 +11,7 @@ let deepgramApiKey = "";
 let playbackAudio = null;
 let playbackStream = null;
 let segmentCounter = 0;
+let currentSourceLanguage = "fr";
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || message.target !== "offscreen") {
@@ -53,7 +51,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-async function startOffscreenCapture({ streamId, tabId }) {
+async function startOffscreenCapture({ streamId, tabId, sourceLanguage }) {
   if (!streamId) {
     throw new Error("Missing stream ID");
   }
@@ -70,6 +68,7 @@ async function startOffscreenCapture({ streamId, tabId }) {
   }
 
   currentTabId = tabId;
+  currentSourceLanguage = normalizeLanguageCode(sourceLanguage) || "fr";
   finalTranscript = "";
   interimTranscript = "";
   segmentCounter = 0;
@@ -87,7 +86,7 @@ async function startOffscreenCapture({ streamId, tabId }) {
   console.log("[LexiconAI] Got media stream", mediaStream);
   startLocalPlayback(mediaStream);
 
-  deepgramSocket = new WebSocket(DEEPGRAM_URL, ["token", deepgramApiKey]);
+  deepgramSocket = new WebSocket(getDeepgramUrl(currentSourceLanguage), ["token", deepgramApiKey]);
 
   deepgramSocket.onopen = () => {
     console.log("[LexiconAI] Deepgram socket opened");
@@ -251,6 +250,7 @@ async function stopOffscreenCapture() {
   mediaStream = null;
   stopLocalPlayback();
   currentTabId = null;
+  currentSourceLanguage = "fr";
   finalTranscript = "";
   interimTranscript = "";
   segmentCounter = 0;
@@ -368,6 +368,15 @@ function parseEnv(source) {
   }
 
   return result;
+}
+
+function getDeepgramUrl(sourceLanguage) {
+  const language = normalizeLanguageCode(sourceLanguage) || "fr";
+  return `wss://api.deepgram.com/v1/listen?model=nova-3&language=${language}&interim_results=true&smart_format=true&endpointing=50`;
+}
+
+function normalizeLanguageCode(language) {
+  return (language || "").trim().toLowerCase();
 }
 
 function getDominantLanguage(alternative) {

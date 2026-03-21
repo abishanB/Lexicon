@@ -2,6 +2,7 @@ const OFFSCREEN_PATH = "offscreen.html";
 const TRANSLATION_API_URL = "http://localhost:8000/translate";
 const TRANSLATION_ENABLED = true;
 const TRANSLATION_BATCH_WINDOW_MS = 100;
+const DEFAULT_SOURCE_LANGUAGE = "fr";
 
 const state = {
   isRecording: false,
@@ -9,6 +10,7 @@ const state = {
   lastTranscript: "",
   lastTranslation: "",
   lastLanguage: "",
+  selectedSourceLanguage: DEFAULT_SOURCE_LANGUAGE,
   lastError: "",
   createdAt: null,
   latestSegmentId: 0,
@@ -122,6 +124,7 @@ async function startCapture() {
   state.lastTranscript = "";
   state.lastTranslation = "";
   state.lastLanguage = "";
+  state.selectedSourceLanguage = await getSelectedSourceLanguage();
   state.lastError = "";
   state.createdAt = Date.now();
   state.latestSegmentId = 0;
@@ -139,7 +142,8 @@ async function startCapture() {
     type: "OFFSCREEN_START",
     target: "offscreen",
     tabId: tab.id,
-    streamId
+    streamId,
+    sourceLanguage: state.selectedSourceLanguage
   });
 
   if (!offscreenResponse?.ok) {
@@ -184,6 +188,7 @@ async function stopCapture() {
   state.lastTranscript = "";
   state.lastTranslation = "";
   state.lastLanguage = "";
+  state.selectedSourceLanguage = DEFAULT_SOURCE_LANGUAGE;
   state.lastError = "";
   state.createdAt = null;
   state.latestSegmentId = 0;
@@ -205,6 +210,7 @@ function handleOffscreenStatus(message) {
     state.tabId = null;
     state.lastTranslation = "";
     state.lastLanguage = "";
+    state.selectedSourceLanguage = DEFAULT_SOURCE_LANGUAGE;
     state.createdAt = null;
     state.latestSegmentId = 0;
     state.pendingTranslations = {};
@@ -233,7 +239,8 @@ function handleTranscriptUpdate(message) {
     translatedText: "",
     isFinal: Boolean(message.isFinal),
     segmentId: Number(message.segmentId) || 0,
-    language: state.lastLanguage
+    language: state.lastLanguage,
+    sourceLanguage: state.selectedSourceLanguage
   };
 
   sendMessageToTab(state.tabId, payload).catch((error) => {
@@ -244,9 +251,10 @@ function handleTranscriptUpdate(message) {
     return;
   }
 
-  if (!shouldTranslateSegment(state.lastLanguage)) {
-    console.log("[LexiconAI] Skipping translation for non-French segment", {
-      language: state.lastLanguage,
+  if (!shouldTranslateSegment(state.selectedSourceLanguage, state.lastLanguage)) {
+    console.log("[LexiconAI] Skipping translation for segment", {
+      selected: state.selectedSourceLanguage,
+      detected: state.lastLanguage,
       text: message.text
     });
     return;
@@ -277,6 +285,7 @@ function getPublicState() {
     lastTranscript: state.lastTranscript,
     lastTranslation: state.lastTranslation,
     lastLanguage: state.lastLanguage,
+    selectedSourceLanguage: state.selectedSourceLanguage,
     lastError: state.lastError,
     createdAt: state.createdAt
   };
@@ -395,7 +404,10 @@ async function requestTranslation(text) {
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ text })
+    body: JSON.stringify({
+      text,
+      sourceLanguage: state.selectedSourceLanguage
+    })
   });
 
   if (!response.ok) {
@@ -410,8 +422,27 @@ function normalizeLanguageCode(language) {
   return (language || "").trim().toLowerCase();
 }
 
-function shouldTranslateSegment(language) {
-  return normalizeLanguageCode(language).startsWith("fr");
+function shouldTranslateSegment(selectedSourceLanguage, detectedLanguage) {
+  const selected = normalizeLanguageCode(selectedSourceLanguage) || DEFAULT_SOURCE_LANGUAGE;
+  const detected = normalizeLanguageCode(detectedLanguage);
+
+  if (!detected) {
+    return true;
+  }
+
+  return detected.startsWith(selected);
+}
+
+async function getSelectedSourceLanguage() {
+  try {
+    const stored = await chrome.storage.local.get({
+      sourceLanguage: DEFAULT_SOURCE_LANGUAGE
+    });
+    return normalizeLanguageCode(stored.sourceLanguage) || DEFAULT_SOURCE_LANGUAGE;
+  } catch (error) {
+    console.warn("[LexiconAI] Failed to load source language setting", error);
+    return DEFAULT_SOURCE_LANGUAGE;
+  }
 }
 
 function queueTranslation(text, segmentId) {

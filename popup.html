@@ -88,6 +88,15 @@
       .setting-row input[type="range"] {
         width: 100%;
       }
+
+      .setting-row select {
+        width: 100%;
+        border-radius: 8px;
+        border: 0;
+        padding: 8px 10px;
+        background: #1f2937;
+        color: #f9fafb;
+      }
     </style>
   </head>
   <body>
@@ -99,6 +108,15 @@
     </div>
     <div class="settings">
       <h2>Subtitle Settings</h2>
+      <div class="setting-row">
+        <label for="sourceLanguage">
+          <span>Language</span>
+        </label>
+        <select id="sourceLanguage">
+          <option value="fr">French -> English</option>
+          <option value="ja">Japanese -> English</option>
+        </select>
+      </div>
       <div class="setting-row">
         <label for="captionSize">
           <span>Caption Size</span>

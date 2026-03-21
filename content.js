@@ -273,7 +273,8 @@
         originalText: message.originalText || "",
         translatedText: message.translatedText || "",
         isFinal: Boolean(message.isFinal),
-        segmentId: Number(message.segmentId) || 0
+        segmentId: Number(message.segmentId) || 0,
+        sourceLanguage: message.sourceLanguage || "fr"
       });
       sendResponse({ ok: true });
       return false;
@@ -363,7 +364,7 @@
     translation.style.fontSize = `${translationSize}px`;
   }
 
-  function updateSubtitle({ originalText, translatedText, isFinal, segmentId }) {
+  function updateSubtitle({ originalText, translatedText, isFinal, segmentId, sourceLanguage }) {
     if (segmentId && segmentId < currentSegmentId) {
       return;
     }
@@ -386,7 +387,12 @@
 
     if (isFinal && translatedText) {
       holdUntil = Date.now() + FINAL_SUBTITLE_HOLD_MS;
-      renderAlignedSubtitlePair(originalNode, translationNode, originalText, translatedText);
+      if ((sourceLanguage || "fr") === "fr") {
+        renderAlignedSubtitlePair(originalNode, translationNode, originalText, translatedText);
+      } else {
+        renderPlainSubtitle(originalNode, originalText || "Listening...");
+        renderPlainSubtitle(translationNode, translatedText);
+      }
       translationNode.classList.remove("LexiconAI-hidden");
     } else {
       if (isFinal) {
