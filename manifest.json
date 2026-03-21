@@ -12,7 +12,9 @@
   ],
   "host_permissions": [
     "https://api.deepgram.com/*",
-    "wss://api.deepgram.com/*"
+    "wss://api.deepgram.com/*",
+    "http://localhost:8000/*",
+    "http://127.0.0.1:8000/*"
   ],
   "background": {
     "service_worker": "background.js"

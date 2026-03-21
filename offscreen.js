@@ -1,6 +1,6 @@
 const DEEPGRAM_URL =
   // TODO: Tune model, language, and endpointing settings once translation/language features are added.
-  "wss://api.deepgram.com/v1/listen?model=nova-2&interim_results=true&smart_format=true&endpointing=300";
+  "wss://api.deepgram.com/v1/listen?model=nova-2&language=fr&interim_results=true&smart_format=true&endpointing=300";
 
 let mediaStream = null;
 let mediaRecorder = null;
@@ -12,6 +12,7 @@ let interimTranscript = "";
 let deepgramApiKey = "";
 let playbackAudio = null;
 let playbackStream = null;
+let segmentCounter = 0;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || message.target !== "offscreen") {
@@ -70,6 +71,7 @@ async function startOffscreenCapture({ streamId, tabId }) {
   currentTabId = tabId;
   finalTranscript = "";
   interimTranscript = "";
+  segmentCounter = 0;
 
   mediaStream = await navigator.mediaDevices.getUserMedia({
     audio: {
@@ -190,18 +192,25 @@ function handleDeepgramMessage(data) {
   }
 
   if (data.type === "UtteranceEnd") {
-    if (finalTranscript) {
-      emitTranscript(finalTranscript, true);
-    }
+    return;
   }
 }
 
 function emitTranscript(text, isFinal) {
+  const normalizedText = (text || "").trim();
+
+  if (!normalizedText) {
+    return;
+  }
+
+  segmentCounter += 1;
+
   chrome.runtime.sendMessage({
     type: "TRANSCRIPT_UPDATE",
     tabId: currentTabId,
-    text,
-    isFinal
+    text: normalizedText,
+    isFinal,
+    segmentId: segmentCounter
   });
 }
 
@@ -240,6 +249,7 @@ async function stopOffscreenCapture() {
   currentTabId = null;
   finalTranscript = "";
   interimTranscript = "";
+  segmentCounter = 0;
 
   await chrome.runtime.sendMessage({
     type: "OFFSCREEN_STATUS",

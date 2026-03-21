@@ -9,10 +9,10 @@ LinguaLens is a hackathon-friendly Chrome extension MVP that captures the active
 - Shows live interim transcript updates
 - Shows final transcript updates
 - Renders subtitles directly on the current webpage
+- Translates finalized French transcript segments to English through a local FastAPI backend
 
 ## What It Does Not Do Yet
 
-- Translation
 - Language filtering
 - Language detection
 - Transcript history
@@ -29,6 +29,7 @@ LinguaLens is a hackathon-friendly Chrome extension MVP that captures the active
 - `content.js`: floating subtitle overlay
 - `styles.css`: subtitle styling
 - `.env`: local runtime config for the Deepgram key
+- `backend/`: local FastAPI + Argos Translate backend for French to English
 
 ## Setup
 
@@ -41,12 +42,21 @@ LinguaLens is a hackathon-friendly Chrome extension MVP that captures the active
 
 ## How To Run
 
+Start the local translation backend first:
+
+1. Follow the instructions in `backend/README.md`
+2. Run the FastAPI server on `http://localhost:8000`
+
+Then run the extension:
+
 1. Open a tab that is actively playing spoken audio.
 2. Click the LinguaLens extension icon.
 3. Press `Start`.
 4. Grant any Chrome permissions if prompted.
 5. Watch the subtitle overlay appear near the bottom of the page.
-6. Press `Stop` to end capture and remove the overlay.
+6. Interim transcript shows only the French line.
+7. Finalized French transcript shows the French line first, then the English translation when the backend returns it.
+8. Press `Stop` to end capture and remove the overlay.
 
 ## Testing Notes
 
@@ -57,6 +67,8 @@ LinguaLens is a hackathon-friendly Chrome extension MVP that captures the active
   - the offscreen document console
 - The extension uses `MediaRecorder` with WebM/Opus audio chunks for simplicity.
 - Depending on the page and Chrome version, tab-audio capture behavior can vary slightly.
+- Translation calls are sent only for finalized transcript segments.
+- The backend is local-only and expected at `http://localhost:8000`.
 
 ## Debugging
 
@@ -70,7 +82,7 @@ LinguaLens is a hackathon-friendly Chrome extension MVP that captures the active
 - Move the Deepgram API key into a safer configuration flow
 - Add transcript buffering for smoother multi-sentence captions
 - Add language selection and detection
-- Add translation
+- Expand translation beyond French to English
 - Add a better session state model for popup updates
 - Add reconnection logic for transient WebSocket failures
 

@@ -1,11 +1,17 @@
 const OFFSCREEN_PATH = "offscreen.html";
+const TRANSLATION_API_URL = "http://localhost:8000/translate";
+const TRANSLATION_ENABLED = true;
 
 const state = {
   isRecording: false,
   tabId: null,
   lastTranscript: "",
+  lastTranslation: "",
   lastError: "",
-  createdAt: null
+  createdAt: null,
+  latestSegmentId: 0,
+  translationCache: {},
+  pendingTranslations: {}
 };
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -109,8 +115,11 @@ async function startCapture() {
   state.isRecording = true;
   state.tabId = tab.id;
   state.lastTranscript = "";
+  state.lastTranslation = "";
   state.lastError = "";
   state.createdAt = Date.now();
+  state.latestSegmentId = 0;
+  state.pendingTranslations = {};
 
   await sendMessageToTab(tab.id, { type: "SHOW_OVERLAY" });
 
@@ -166,8 +175,11 @@ async function stopCapture() {
   state.isRecording = false;
   state.tabId = null;
   state.lastTranscript = "";
+  state.lastTranslation = "";
   state.lastError = "";
   state.createdAt = null;
+  state.latestSegmentId = 0;
+  state.pendingTranslations = {};
 
   return {
     ok: true,
@@ -182,7 +194,10 @@ function handleOffscreenStatus(message) {
     const tabId = state.tabId;
     state.isRecording = false;
     state.tabId = null;
+    state.lastTranslation = "";
     state.createdAt = null;
+    state.latestSegmentId = 0;
+    state.pendingTranslations = {};
 
     if (typeof tabId === "number") {
       sendMessageToTab(tabId, { type: "HIDE_OVERLAY" }).catch((error) => {
@@ -194,17 +209,30 @@ function handleOffscreenStatus(message) {
 
 function handleTranscriptUpdate(message) {
   state.lastTranscript = message.text || "";
+  state.latestSegmentId = Math.max(state.latestSegmentId, Number(message.segmentId) || 0);
 
   if (typeof state.tabId !== "number") {
     return;
   }
 
-  sendMessageToTab(state.tabId, {
+  const payload = {
     type: "UPDATE_SUBTITLE",
-    text: message.text || "",
-    isFinal: Boolean(message.isFinal)
-  }).catch((error) => {
+    originalText: message.text || "",
+    translatedText: "",
+    isFinal: Boolean(message.isFinal),
+    segmentId: Number(message.segmentId) || 0
+  };
+
+  sendMessageToTab(state.tabId, payload).catch((error) => {
     console.warn("[LinguaLens] Failed to forward transcript", error);
+  });
+
+  if (!message.isFinal || !message.text || !TRANSLATION_ENABLED) {
+    return;
+  }
+
+  translateFinalTranscript(message.text, payload.segmentId).catch((error) => {
+    console.warn("[LinguaLens] Translation request failed", error);
   });
 }
 
@@ -228,6 +256,7 @@ function getPublicState() {
     isRecording: state.isRecording,
     tabId: state.tabId,
     lastTranscript: state.lastTranscript,
+    lastTranslation: state.lastTranslation,
     lastError: state.lastError,
     createdAt: state.createdAt
   };
@@ -280,4 +309,79 @@ async function sendMessageToTab(tabId, message) {
     console.warn("[LinguaLens] Tab message failed", { tabId, message, error });
     return null;
   }
+}
+
+async function translateFinalTranscript(originalText, segmentId) {
+  const normalizedText = originalText.trim();
+
+  if (!normalizedText) {
+    return;
+  }
+
+  if (state.translationCache[normalizedText]) {
+    state.lastTranslation = state.translationCache[normalizedText];
+    await sendTranslatedSubtitle(normalizedText, state.lastTranslation, segmentId);
+    return;
+  }
+
+  if (state.pendingTranslations[normalizedText]) {
+    const translatedText = await state.pendingTranslations[normalizedText];
+    state.lastTranslation = translatedText;
+    await sendTranslatedSubtitle(normalizedText, translatedText, segmentId);
+    return;
+  }
+
+  // Translation is isolated here so it can be disabled or swapped later without touching Deepgram flow.
+  state.pendingTranslations[normalizedText] = requestTranslation(normalizedText);
+
+  try {
+    const translatedText = await state.pendingTranslations[normalizedText];
+
+    if (!translatedText) {
+      console.warn("[LinguaLens] Translation backend returned an empty response");
+      return;
+    }
+
+    state.translationCache[normalizedText] = translatedText;
+    state.lastTranslation = translatedText;
+    await sendTranslatedSubtitle(normalizedText, translatedText, segmentId);
+  } finally {
+    delete state.pendingTranslations[normalizedText];
+  }
+}
+
+async function sendTranslatedSubtitle(originalText, translatedText, segmentId) {
+  if (typeof state.tabId !== "number") {
+    return;
+  }
+
+  if (segmentId < state.latestSegmentId) {
+    console.log("[LinguaLens] Skipping stale translation result", { segmentId, latest: state.latestSegmentId });
+    return;
+  }
+
+  await sendMessageToTab(state.tabId, {
+    type: "UPDATE_SUBTITLE",
+    originalText,
+    translatedText,
+    isFinal: true,
+    segmentId
+  });
+}
+
+async function requestTranslation(text) {
+  const response = await fetch(TRANSLATION_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ text })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Translation backend error: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  return (payload.translatedText || "").trim();
 }

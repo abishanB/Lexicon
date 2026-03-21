@@ -6,6 +6,7 @@
   window.__linguaLensInjected = true;
 
   const OVERLAY_ID = "lingualens-overlay";
+  let currentSegmentId = 0;
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message || !message.type) {
@@ -19,7 +20,12 @@
     }
 
     if (message.type === "UPDATE_SUBTITLE") {
-      updateSubtitle(message.text || "", Boolean(message.isFinal));
+      updateSubtitle({
+        originalText: message.originalText || "",
+        translatedText: message.translatedText || "",
+        isFinal: Boolean(message.isFinal),
+        segmentId: Number(message.segmentId) || 0
+      });
       sendResponse({ ok: true });
       return false;
     }
@@ -51,32 +57,53 @@
     overlay.className = "lingualens-overlay lingualens-hidden";
     overlay.innerHTML = `
       <div class="lingualens-caption" aria-live="polite">
-        <span class="lingualens-text">Listening...</span>
+        <span class="lingualens-original">Listening...</span>
+        <span class="lingualens-translation lingualens-hidden"></span>
       </div>
     `;
 
     document.documentElement.appendChild(overlay);
   }
 
-  function updateSubtitle(text, isFinal) {
+  function updateSubtitle({ originalText, translatedText, isFinal, segmentId }) {
+    if (segmentId && segmentId < currentSegmentId) {
+      return;
+    }
+
+    if (segmentId) {
+      currentSegmentId = segmentId;
+    }
+
     const overlay = getOverlay();
-    const textNode = overlay.querySelector(".lingualens-text");
+    const originalNode = overlay.querySelector(".lingualens-original");
+    const translationNode = overlay.querySelector(".lingualens-translation");
     const caption = overlay.querySelector(".lingualens-caption");
 
     overlay.classList.remove("lingualens-hidden");
-    textNode.textContent = text || "Listening...";
+    originalNode.textContent = originalText || "Listening...";
     caption.classList.toggle("lingualens-final", isFinal);
+
+    if (isFinal && translatedText) {
+      translationNode.textContent = translatedText;
+      translationNode.classList.remove("lingualens-hidden");
+    } else {
+      translationNode.textContent = "";
+      translationNode.classList.add("lingualens-hidden");
+    }
   }
 
   function showError(error) {
     const overlay = getOverlay();
-    const textNode = overlay.querySelector(".lingualens-text");
+    const originalNode = overlay.querySelector(".lingualens-original");
+    const translationNode = overlay.querySelector(".lingualens-translation");
     const caption = overlay.querySelector(".lingualens-caption");
 
     overlay.classList.remove("lingualens-hidden");
     caption.classList.remove("lingualens-final");
     caption.classList.add("lingualens-error");
-    textNode.textContent = `LinguaLens error: ${error}`;
+    originalNode.textContent = `LinguaLens error: ${error}`;
+    translationNode.textContent = "";
+    translationNode.classList.add("lingualens-hidden");
   }
 
   function hideOverlay() {
@@ -86,6 +113,7 @@
       return;
     }
 
+    currentSegmentId = 0;
     overlay.remove();
   }
 
