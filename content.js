@@ -6,7 +6,9 @@
   window.__linguaLensInjected = true;
 
   const OVERLAY_ID = "lingualens-overlay";
+  const FINAL_SUBTITLE_HOLD_MS = 3000;
   let currentSegmentId = 0;
+  let holdUntil = 0;
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message || !message.type) {
@@ -70,6 +72,10 @@
       return;
     }
 
+    if (!isFinal && Date.now() < holdUntil) {
+      return;
+    }
+
     if (segmentId) {
       currentSegmentId = segmentId;
     }
@@ -84,9 +90,13 @@
     caption.classList.toggle("lingualens-final", isFinal);
 
     if (isFinal && translatedText) {
+      holdUntil = Date.now() + FINAL_SUBTITLE_HOLD_MS;
       translationNode.textContent = translatedText;
       translationNode.classList.remove("lingualens-hidden");
     } else {
+      if (isFinal) {
+        holdUntil = Date.now() + FINAL_SUBTITLE_HOLD_MS;
+      }
       translationNode.textContent = "";
       translationNode.classList.add("lingualens-hidden");
     }
@@ -114,6 +124,7 @@
     }
 
     currentSegmentId = 0;
+    holdUntil = 0;
     overlay.remove();
   }
 
