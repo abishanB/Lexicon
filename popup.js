@@ -1,6 +1,14 @@
 const startBtn = document.getElementById("startBtn");
 const stopBtn = document.getElementById("stopBtn");
 const statusEl = document.getElementById("status");
+const captionSizeInput = document.getElementById("captionSize");
+const captionOpacityInput = document.getElementById("captionOpacity");
+const captionSizeValue = document.getElementById("captionSizeValue");
+const captionOpacityValue = document.getElementById("captionOpacityValue");
+const DEFAULT_SETTINGS = {
+  captionSize: 24,
+  captionOpacity: 84
+};
 
 startBtn.addEventListener("click", async () => {
   setStatus("Starting transcription...");
@@ -36,7 +44,11 @@ stopBtn.addEventListener("click", async () => {
   }
 });
 
+captionSizeInput.addEventListener("input", handleSettingsChange);
+captionOpacityInput.addEventListener("input", handleSettingsChange);
+
 refreshState();
+loadSettings();
 
 async function refreshState() {
   try {
@@ -69,4 +81,41 @@ function updateFromState(state) {
 
 function setStatus(text) {
   statusEl.textContent = text;
+}
+
+async function loadSettings() {
+  try {
+    const stored = await chrome.storage.local.get(DEFAULT_SETTINGS);
+    const settings = {
+      captionSize: Number(stored.captionSize) || DEFAULT_SETTINGS.captionSize,
+      captionOpacity: Number(stored.captionOpacity) || DEFAULT_SETTINGS.captionOpacity
+    };
+
+    captionSizeInput.value = String(settings.captionSize);
+    captionOpacityInput.value = String(settings.captionOpacity);
+    updateSettingsLabels(settings);
+  } catch (error) {
+    console.error("[LexiconAI] Failed to load settings", error);
+    updateSettingsLabels(DEFAULT_SETTINGS);
+  }
+}
+
+async function handleSettingsChange() {
+  const settings = {
+    captionSize: Number(captionSizeInput.value),
+    captionOpacity: Number(captionOpacityInput.value)
+  };
+
+  updateSettingsLabels(settings);
+
+  try {
+    await chrome.storage.local.set(settings);
+  } catch (error) {
+    console.error("[LexiconAI] Failed to save settings", error);
+  }
+}
+
+function updateSettingsLabels(settings) {
+  captionSizeValue.textContent = `${settings.captionSize}px`;
+  captionOpacityValue.textContent = `${settings.captionOpacity}%`;
 }

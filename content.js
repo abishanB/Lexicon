@@ -7,6 +7,10 @@
 
   const OVERLAY_ID = "LexiconAI-overlay";
   const FINAL_SUBTITLE_HOLD_MS = 3000;
+  const DEFAULT_UI_SETTINGS = {
+    captionSize: 24,
+    captionOpacity: 84
+  };
   const WORD_MATCH_COLORS = [
     "#7dd3fc",
     "#86efac",
@@ -267,7 +271,20 @@
     return false;
   });
 
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local") {
+      return;
+    }
+
+    if (!changes.captionSize && !changes.captionOpacity) {
+      return;
+    }
+
+    applyStoredSettings();
+  });
+
   ensureOverlay();
+  applyStoredSettings();
 
   function ensureOverlay() {
     if (document.getElementById(OVERLAY_ID)) {
@@ -285,6 +302,42 @@
     `;
 
     document.documentElement.appendChild(overlay);
+  }
+
+  async function applyStoredSettings() {
+    try {
+      const stored = await chrome.storage.local.get(DEFAULT_UI_SETTINGS);
+      applyOverlaySettings({
+        captionSize: Number(stored.captionSize) || DEFAULT_UI_SETTINGS.captionSize,
+        captionOpacity: Number(stored.captionOpacity) || DEFAULT_UI_SETTINGS.captionOpacity
+      });
+    } catch (error) {
+      console.warn("[LexiconAI] Failed to load UI settings", error);
+      applyOverlaySettings(DEFAULT_UI_SETTINGS);
+    }
+  }
+
+  function applyOverlaySettings(settings) {
+    const overlay = document.getElementById(OVERLAY_ID);
+
+    if (!overlay) {
+      return;
+    }
+
+    const caption = overlay.querySelector(".LexiconAI-caption");
+    const translation = overlay.querySelector(".LexiconAI-translation");
+
+    if (!caption || !translation) {
+      return;
+    }
+
+    const captionSize = clamp(settings.captionSize, 18, 40);
+    const captionOpacity = clamp(settings.captionOpacity, 50, 100) / 100;
+    const translationSize = Math.max(15, Math.round(captionSize * 0.75));
+
+    caption.style.fontSize = `${captionSize}px`;
+    caption.style.background = `rgba(15, 23, 42, ${captionOpacity})`;
+    translation.style.fontSize = `${translationSize}px`;
   }
 
   function updateSubtitle({ originalText, translatedText, isFinal, segmentId }) {
@@ -546,5 +599,9 @@
     const caption = overlay.querySelector(".LexiconAI-caption");
     caption.classList.remove("LexiconAI-error");
     return overlay;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
   }
 })();

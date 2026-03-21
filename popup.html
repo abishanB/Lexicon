@@ -58,6 +58,36 @@
         font-size: 13px;
         color: #e2e8f0;
       }
+
+      .settings {
+        margin-top: 14px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .settings h2 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        color: #e2e8f0;
+      }
+
+      .setting-row + .setting-row {
+        margin-top: 10px;
+      }
+
+      .setting-row label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        font-size: 12px;
+        color: #cbd5e1;
+      }
+
+      .setting-row input[type="range"] {
+        width: 100%;
+      }
     </style>
   </head>
   <body>
@@ -66,6 +96,23 @@
     <div class="buttons">
       <button id="startBtn">Start</button>
       <button id="stopBtn">Stop</button>
+    </div>
+    <div class="settings">
+      <h2>Subtitle Settings</h2>
+      <div class="setting-row">
+        <label for="captionSize">
+          <span>Caption Size</span>
+          <span id="captionSizeValue">24px</span>
+        </label>
+        <input id="captionSize" type="range" min="18" max="40" step="1" value="24" />
+      </div>
+      <div class="setting-row">
+        <label for="captionOpacity">
+          <span>Background Opacity</span>
+          <span id="captionOpacityValue">84%</span>
+        </label>
+        <input id="captionOpacity" type="range" min="50" max="100" step="1" value="84" />
+      </div>
     </div>
     <div id="status">Checking status...</div>
     <script src="popup.js"></script>
