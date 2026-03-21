@@ -1,7 +1,7 @@
 const DEEPGRAM_URL =
   // Use Deepgram multilingual streaming so each finalized segment can be routed by dominant language.
-  "wss://api.deepgram.com/v1/listen?model=nova-3&language=multi&interim_results=true&smart_format=true&endpointing=100";
-const MEDIA_RECORDER_TIMESLICE_MS = 100;
+  "wss://api.deepgram.com/v1/listen?model=nova-3&language=multi&interim_results=true&smart_format=true&endpointing=50";
+const MEDIA_RECORDER_TIMESLICE_MS = 60;
 
 let mediaStream = null;
 let mediaRecorder = null;

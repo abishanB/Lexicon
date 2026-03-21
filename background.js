@@ -1,7 +1,7 @@
 const OFFSCREEN_PATH = "offscreen.html";
 const TRANSLATION_API_URL = "http://localhost:8000/translate";
 const TRANSLATION_ENABLED = true;
-const TRANSLATION_BATCH_WINDOW_MS = 250;
+const TRANSLATION_BATCH_WINDOW_MS = 100;
 
 const state = {
   isRecording: false,
