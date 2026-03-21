@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "LinguaLens",
+  "name": "LexiconAI",
   "version": "0.1.0",
   "description": "Capture active tab audio, transcribe it with Deepgram, and show live subtitles on the page.",
   "permissions": [
@@ -21,7 +21,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "LinguaLens"
+    "default_title": "LexiconAI"
   },
   "web_accessible_resources": [
     {

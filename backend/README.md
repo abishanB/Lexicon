@@ -1,6 +1,6 @@
-# LinguaLens Backend
+# LexiconAI Backend
 
-This backend provides a simple local French-to-English translation service for the LinguaLens Chrome extension.
+This backend provides a simple local French-to-English translation service for the LexiconAI Chrome extension.
 
 ## What It Does
 

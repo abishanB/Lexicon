@@ -16,7 +16,7 @@ const state = {
 };
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log("[LinguaLens] Extension installed");
+  console.log("[LexiconAI] Extension installed");
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -28,7 +28,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     startCapture()
       .then((result) => sendResponse(result))
       .catch((error) => {
-        console.error("[LinguaLens] Failed to start capture", error);
+        console.error("[LexiconAI] Failed to start capture", error);
         sendResponse({
           ok: false,
           error: error.message || "Failed to start capture"
@@ -41,7 +41,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     stopCapture()
       .then((result) => sendResponse(result))
       .catch((error) => {
-        console.error("[LinguaLens] Failed to stop capture", error);
+        console.error("[LexiconAI] Failed to stop capture", error);
         sendResponse({
           ok: false,
           error: error.message || "Failed to stop capture"
@@ -81,9 +81,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   if (state.isRecording && state.tabId === tabId) {
-    console.log("[LinguaLens] Active tab closed, stopping session");
+    console.log("[LexiconAI] Active tab closed, stopping session");
     stopCapture().catch((error) => {
-      console.error("[LinguaLens] Failed to stop after tab close", error);
+      console.error("[LexiconAI] Failed to stop after tab close", error);
     });
   }
 });
@@ -125,7 +125,7 @@ async function startCapture() {
 
   await sendMessageToTab(tab.id, { type: "SHOW_OVERLAY" });
 
-  console.log("[LinguaLens] Starting offscreen capture", {
+  console.log("[LexiconAI] Starting offscreen capture", {
     tabId: tab.id,
     streamId
   });
@@ -167,7 +167,7 @@ async function stopCapture() {
       target: "offscreen"
     });
   } catch (error) {
-    console.warn("[LinguaLens] Offscreen stop message failed", error);
+    console.warn("[LexiconAI] Offscreen stop message failed", error);
   }
 
   if (typeof activeTabId === "number") {
@@ -191,7 +191,7 @@ async function stopCapture() {
 }
 
 function handleOffscreenStatus(message) {
-  console.log("[LinguaLens] Offscreen status", message.status);
+  console.log("[LexiconAI] Offscreen status", message.status);
 
   if (message.status === "stopped") {
     const tabId = state.tabId;
@@ -205,7 +205,7 @@ function handleOffscreenStatus(message) {
 
     if (typeof tabId === "number") {
       sendMessageToTab(tabId, { type: "HIDE_OVERLAY" }).catch((error) => {
-        console.warn("[LinguaLens] Failed to hide overlay after stop", error);
+        console.warn("[LexiconAI] Failed to hide overlay after stop", error);
       });
     }
   }
@@ -230,7 +230,7 @@ function handleTranscriptUpdate(message) {
   };
 
   sendMessageToTab(state.tabId, payload).catch((error) => {
-    console.warn("[LinguaLens] Failed to forward transcript", error);
+    console.warn("[LexiconAI] Failed to forward transcript", error);
   });
 
   if (!message.isFinal || !message.text || !TRANSLATION_ENABLED) {
@@ -238,7 +238,7 @@ function handleTranscriptUpdate(message) {
   }
 
   if (!shouldTranslateSegment(state.lastLanguage)) {
-    console.log("[LinguaLens] Skipping translation for non-French segment", {
+    console.log("[LexiconAI] Skipping translation for non-French segment", {
       language: state.lastLanguage,
       text: message.text
     });
@@ -246,12 +246,12 @@ function handleTranscriptUpdate(message) {
   }
 
   translateFinalTranscript(message.text, payload.segmentId).catch((error) => {
-    console.warn("[LinguaLens] Translation request failed", error);
+    console.warn("[LexiconAI] Translation request failed", error);
   });
 }
 
 function handleOffscreenError(message) {
-  console.error("[LinguaLens] Offscreen error", message.error);
+  console.error("[LexiconAI] Offscreen error", message.error);
   state.lastError = message.error || "Unknown error";
   state.isRecording = false;
 
@@ -260,7 +260,7 @@ function handleOffscreenError(message) {
       type: "SHOW_ERROR",
       error: state.lastError
     }).catch((error) => {
-      console.warn("[LinguaLens] Failed to show error on page", error);
+      console.warn("[LexiconAI] Failed to show error on page", error);
     });
   }
 }
@@ -282,7 +282,7 @@ async function ensureOffscreenDocument() {
     return;
   }
 
-  console.log("[LinguaLens] Creating offscreen document");
+  console.log("[LexiconAI] Creating offscreen document");
 
   await chrome.offscreen.createDocument({
     url: OFFSCREEN_PATH,
@@ -308,7 +308,7 @@ async function ensureContentOverlay(tabId) {
       files: ["styles.css"]
     });
   } catch (error) {
-    console.warn("[LinguaLens] CSS injection warning", error);
+    console.warn("[LexiconAI] CSS injection warning", error);
   }
 
   await chrome.scripting.executeScript({
@@ -321,7 +321,7 @@ async function sendMessageToTab(tabId, message) {
   try {
     return await chrome.tabs.sendMessage(tabId, message);
   } catch (error) {
-    console.warn("[LinguaLens] Tab message failed", { tabId, message, error });
+    console.warn("[LexiconAI] Tab message failed", { tabId, message, error });
     return null;
   }
 }
@@ -353,7 +353,7 @@ async function translateFinalTranscript(originalText, segmentId) {
     const translatedText = await state.pendingTranslations[normalizedText];
 
     if (!translatedText) {
-      console.warn("[LinguaLens] Translation backend returned an empty response");
+      console.warn("[LexiconAI] Translation backend returned an empty response");
       return;
     }
 
@@ -371,7 +371,7 @@ async function sendTranslatedSubtitle(originalText, translatedText, segmentId) {
   }
 
   if (segmentId < state.latestSegmentId) {
-    console.log("[LinguaLens] Skipping stale translation result", { segmentId, latest: state.latestSegmentId });
+    console.log("[LexiconAI] Skipping stale translation result", { segmentId, latest: state.latestSegmentId });
     return;
   }
 

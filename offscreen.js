@@ -24,7 +24,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     startOffscreenCapture(message)
       .then(() => sendResponse({ ok: true }))
       .catch((error) => {
-        console.error("[LinguaLens] Offscreen start failed", error);
+        console.error("[LexiconAI] Offscreen start failed", error);
         chrome.runtime.sendMessage({
           type: "OFFSCREEN_ERROR",
           error: error.message || "Offscreen start failed"
@@ -41,7 +41,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     stopOffscreenCapture()
       .then(() => sendResponse({ ok: true }))
       .catch((error) => {
-        console.error("[LinguaLens] Offscreen stop failed", error);
+        console.error("[LexiconAI] Offscreen stop failed", error);
         sendResponse({
           ok: false,
           error: error.message || "Offscreen stop failed"
@@ -65,7 +65,7 @@ async function startOffscreenCapture({ streamId, tabId }) {
   }
 
   if (mediaRecorder || deepgramSocket) {
-    console.log("[LinguaLens] Session already exists, resetting before restart");
+    console.log("[LexiconAI] Session already exists, resetting before restart");
     await stopOffscreenCapture();
   }
 
@@ -84,13 +84,13 @@ async function startOffscreenCapture({ streamId, tabId }) {
     video: false
   });
 
-  console.log("[LinguaLens] Got media stream", mediaStream);
+  console.log("[LexiconAI] Got media stream", mediaStream);
   startLocalPlayback(mediaStream);
 
   deepgramSocket = new WebSocket(DEEPGRAM_URL, ["token", deepgramApiKey]);
 
   deepgramSocket.onopen = () => {
-    console.log("[LinguaLens] Deepgram socket opened");
+    console.log("[LexiconAI] Deepgram socket opened");
     startKeepAlive();
     startRecorder();
 
@@ -106,12 +106,12 @@ async function startOffscreenCapture({ streamId, tabId }) {
       const data = JSON.parse(event.data);
       handleDeepgramMessage(data);
     } catch (error) {
-      console.error("[LinguaLens] Failed to parse Deepgram event", error);
+      console.error("[LexiconAI] Failed to parse Deepgram event", error);
     }
   };
 
   deepgramSocket.onerror = (event) => {
-    console.error("[LinguaLens] Deepgram socket error", event);
+    console.error("[LexiconAI] Deepgram socket error", event);
     chrome.runtime.sendMessage({
       type: "OFFSCREEN_ERROR",
       error: "Deepgram WebSocket error"
@@ -119,7 +119,7 @@ async function startOffscreenCapture({ streamId, tabId }) {
   };
 
   deepgramSocket.onclose = (event) => {
-    console.log("[LinguaLens] Deepgram socket closed", event.code, event.reason);
+    console.log("[LexiconAI] Deepgram socket closed", event.code, event.reason);
     stopKeepAlive();
   };
 }
@@ -150,7 +150,7 @@ function startRecorder() {
   };
 
   mediaRecorder.onerror = (event) => {
-    console.error("[LinguaLens] MediaRecorder error", event.error);
+    console.error("[LexiconAI] MediaRecorder error", event.error);
     chrome.runtime.sendMessage({
       type: "OFFSCREEN_ERROR",
       error: event.error?.message || "MediaRecorder error"
@@ -158,15 +158,15 @@ function startRecorder() {
   };
 
   mediaRecorder.onstop = () => {
-    console.log("[LinguaLens] MediaRecorder stopped");
+    console.log("[LexiconAI] MediaRecorder stopped");
   };
 
   mediaRecorder.start(MEDIA_RECORDER_TIMESLICE_MS);
-  console.log("[LinguaLens] MediaRecorder started with mime type", mimeType);
+  console.log("[LexiconAI] MediaRecorder started with mime type", mimeType);
 }
 
 function handleDeepgramMessage(data) {
-  console.log("[LinguaLens] Deepgram event", data);
+  console.log("[LexiconAI] Deepgram event", data);
 
   if (data.type === "Results") {
     const alternative = data.channel?.alternatives?.[0];
@@ -190,7 +190,7 @@ function handleDeepgramMessage(data) {
   }
 
   if (data.type === "Metadata") {
-    console.log("[LinguaLens] Deepgram metadata received");
+    console.log("[LexiconAI] Deepgram metadata received");
     return;
   }
 
@@ -229,7 +229,7 @@ async function stopOffscreenCapture() {
     try {
       deepgramSocket.send(JSON.stringify({ type: "CloseStream" }));
     } catch (error) {
-      console.warn("[LinguaLens] Failed to send Deepgram close message", error);
+      console.warn("[LexiconAI] Failed to send Deepgram close message", error);
     }
   }
 
@@ -237,7 +237,7 @@ async function stopOffscreenCapture() {
     try {
       deepgramSocket.close();
     } catch (error) {
-      console.warn("[LinguaLens] Failed to close Deepgram socket", error);
+      console.warn("[LexiconAI] Failed to close Deepgram socket", error);
     }
   }
 
@@ -301,7 +301,7 @@ function startLocalPlayback(stream) {
 
   if (playPromise && typeof playPromise.catch === "function") {
     playPromise.catch((error) => {
-      console.warn("[LinguaLens] Local playback could not start", error);
+      console.warn("[LexiconAI] Local playback could not start", error);
     });
   }
 }

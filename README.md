@@ -1,6 +1,6 @@
-# LinguaLens
+# LexiconAI
 
-LinguaLens is a hackathon-friendly Chrome extension MVP that captures the active tab's audio, streams it to Deepgram for live transcription, and renders the transcript as a floating subtitle overlay on the current page.
+LexiconAI is a hackathon-friendly Chrome extension MVP that captures the active tab's audio, streams it to Deepgram for live transcription, and renders the transcript as a floating subtitle overlay on the current page.
 
 ## What This MVP Does
 
@@ -50,7 +50,7 @@ Start the local translation backend first:
 Then run the extension:
 
 1. Open a tab that is actively playing spoken audio.
-2. Click the LinguaLens extension icon.
+2. Click the LexiconAI extension icon.
 3. Press `Start`.
 4. Grant any Chrome permissions if prompted.
 5. Watch the subtitle overlay appear near the bottom of the page.

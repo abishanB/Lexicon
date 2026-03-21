@@ -1,11 +1,11 @@
 (function () {
-  if (window.__linguaLensInjected) {
+  if (window.__LexiconAIInjected) {
     return;
   }
 
-  window.__linguaLensInjected = true;
+  window.__LexiconAIInjected = true;
 
-  const OVERLAY_ID = "lingualens-overlay";
+  const OVERLAY_ID = "LexiconAI-overlay";
   const FINAL_SUBTITLE_HOLD_MS = 3000;
   const WORD_MATCH_COLORS = [
     "#7dd3fc",
@@ -72,7 +72,12 @@
     "vos",
     "votre",
     "vous",
-    "y"
+    "y",
+    "bonjour",
+    "salut",
+    "bonsoir",
+    "merci",
+    "revoir"
   ]);
   const ENGLISH_STOP_WORDS = new Set([
     "a",
@@ -111,7 +116,14 @@
     "we",
     "with",
     "you",
-    "your"
+    "your",
+    "bye",
+    "goodbye",
+    "hello",
+    "hi",
+    "thanks",
+    "thank",
+    "thankyou"
   ]);
 
   // Lightweight French -> English hints for MVP word matching.
@@ -264,11 +276,11 @@
 
     const overlay = document.createElement("div");
     overlay.id = OVERLAY_ID;
-    overlay.className = "lingualens-overlay lingualens-hidden";
+    overlay.className = "LexiconAI-overlay LexiconAI-hidden";
     overlay.innerHTML = `
-      <div class="lingualens-caption" aria-live="polite">
-        <span class="lingualens-original"></span>
-        <span class="lingualens-translation lingualens-hidden"></span>
+      <div class="LexiconAI-caption" aria-live="polite">
+        <span class="LexiconAI-original"></span>
+        <span class="LexiconAI-translation LexiconAI-hidden"></span>
       </div>
     `;
 
@@ -289,17 +301,17 @@
     }
 
     const overlay = getOverlay();
-    const originalNode = overlay.querySelector(".lingualens-original");
-    const translationNode = overlay.querySelector(".lingualens-translation");
-    const caption = overlay.querySelector(".lingualens-caption");
+    const originalNode = overlay.querySelector(".LexiconAI-original");
+    const translationNode = overlay.querySelector(".LexiconAI-translation");
+    const caption = overlay.querySelector(".LexiconAI-caption");
 
-    overlay.classList.remove("lingualens-hidden");
-    caption.classList.toggle("lingualens-final", isFinal);
+    overlay.classList.remove("LexiconAI-hidden");
+    caption.classList.toggle("LexiconAI-final", isFinal);
 
     if (isFinal && translatedText) {
       holdUntil = Date.now() + FINAL_SUBTITLE_HOLD_MS;
       renderAlignedSubtitlePair(originalNode, translationNode, originalText, translatedText);
-      translationNode.classList.remove("lingualens-hidden");
+      translationNode.classList.remove("LexiconAI-hidden");
     } else {
       if (isFinal) {
         holdUntil = Date.now() + FINAL_SUBTITLE_HOLD_MS;
@@ -307,7 +319,7 @@
 
       renderPlainSubtitle(originalNode, originalText || "Listening...");
       translationNode.textContent = "";
-      translationNode.classList.add("lingualens-hidden");
+      translationNode.classList.add("LexiconAI-hidden");
     }
   }
 
@@ -336,7 +348,7 @@
       }
 
       const span = document.createElement("span");
-      span.className = token.type === "word" ? "lingualens-word" : "lingualens-punctuation";
+      span.className = token.type === "word" ? "LexiconAI-word" : "LexiconAI-punctuation";
       span.textContent = token.value;
 
       if (token.type === "word" && colorMap[token.index]) {
@@ -504,16 +516,16 @@
 
   function showError(error) {
     const overlay = getOverlay();
-    const originalNode = overlay.querySelector(".lingualens-original");
-    const translationNode = overlay.querySelector(".lingualens-translation");
-    const caption = overlay.querySelector(".lingualens-caption");
+    const originalNode = overlay.querySelector(".LexiconAI-original");
+    const translationNode = overlay.querySelector(".LexiconAI-translation");
+    const caption = overlay.querySelector(".LexiconAI-caption");
 
-    overlay.classList.remove("lingualens-hidden");
-    caption.classList.remove("lingualens-final");
-    caption.classList.add("lingualens-error");
-    renderPlainSubtitle(originalNode, `LinguaLens error: ${error}`);
+    overlay.classList.remove("LexiconAI-hidden");
+    caption.classList.remove("LexiconAI-final");
+    caption.classList.add("LexiconAI-error");
+    renderPlainSubtitle(originalNode, `LexiconAI error: ${error}`);
     translationNode.textContent = "";
-    translationNode.classList.add("lingualens-hidden");
+    translationNode.classList.add("LexiconAI-hidden");
   }
 
   function hideOverlay() {
@@ -531,8 +543,8 @@
   function getOverlay() {
     ensureOverlay();
     const overlay = document.getElementById(OVERLAY_ID);
-    const caption = overlay.querySelector(".lingualens-caption");
-    caption.classList.remove("lingualens-error");
+    const caption = overlay.querySelector(".LexiconAI-caption");
+    caption.classList.remove("LexiconAI-error");
     return overlay;
   }
 })();

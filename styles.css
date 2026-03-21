@@ -1,4 +1,4 @@
-#lingualens-overlay {
+#LexiconAI-overlay {
   position: fixed;
   left: 50%;
   bottom: 32px;
@@ -8,11 +8,11 @@
   pointer-events: none;
 }
 
-.lingualens-hidden {
+.LexiconAI-hidden {
   display: none;
 }
 
-.lingualens-caption {
+.LexiconAI-caption {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -30,20 +30,20 @@
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.lingualens-caption.lingualens-final {
+.LexiconAI-caption.LexiconAI-final {
   background: rgba(17, 24, 39, 0.9);
 }
 
-.lingualens-caption.lingualens-error {
+.LexiconAI-caption.LexiconAI-error {
   background: rgba(127, 29, 29, 0.88);
 }
 
-.lingualens-original {
+.LexiconAI-original {
   display: block;
   word-break: break-word;
 }
 
-.lingualens-translation {
+.LexiconAI-translation {
   display: block;
   word-break: break-word;
   color: rgba(226, 232, 240, 0.94);
@@ -53,34 +53,34 @@
   border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.lingualens-word,
-.lingualens-punctuation {
+.LexiconAI-word,
+.LexiconAI-punctuation {
   display: inline;
 }
 
-.lingualens-word {
+.LexiconAI-word {
   color: #ffffff;
   font-weight: 600;
 }
 
-.lingualens-translation .lingualens-word {
+.LexiconAI-translation .LexiconAI-word {
   color: rgba(226, 232, 240, 0.94);
   font-weight: 500;
 }
 
 @media (max-width: 640px) {
-  #lingualens-overlay {
+  #LexiconAI-overlay {
     bottom: 20px;
     width: calc(100vw - 20px);
   }
 
-  .lingualens-caption {
+  .LexiconAI-caption {
     font-size: 19px;
     padding: 12px 14px;
     border-radius: 14px;
   }
 
-  .lingualens-translation {
+  .LexiconAI-translation {
     font-size: 15px;
   }
 }

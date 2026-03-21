@@ -14,7 +14,7 @@ startBtn.addEventListener("click", async () => {
 
     updateFromState(response.state);
   } catch (error) {
-    console.error("[LinguaLens] Start failed", error);
+    console.error("[LexiconAI] Start failed", error);
     setStatus(`Error: ${error.message}`);
   }
 });
@@ -31,7 +31,7 @@ stopBtn.addEventListener("click", async () => {
 
     updateFromState(response.state);
   } catch (error) {
-    console.error("[LinguaLens] Stop failed", error);
+    console.error("[LexiconAI] Stop failed", error);
     setStatus(`Error: ${error.message}`);
   }
 });
@@ -43,7 +43,7 @@ async function refreshState() {
     const response = await chrome.runtime.sendMessage({ type: "GET_STATE" });
     updateFromState(response?.state);
   } catch (error) {
-    console.error("[LinguaLens] Failed to load state", error);
+    console.error("[LexiconAI] Failed to load state", error);
     setStatus("Unable to load extension state");
   }
 }
