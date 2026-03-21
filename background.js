@@ -1,6 +1,7 @@
 const OFFSCREEN_PATH = "offscreen.html";
 const TRANSLATION_API_URL = "http://localhost:8000/translate";
 const TRANSLATION_ENABLED = true;
+const TRANSLATION_BATCH_WINDOW_MS = 250;
 
 const state = {
   isRecording: false,
@@ -12,7 +13,10 @@ const state = {
   createdAt: null,
   latestSegmentId: 0,
   translationCache: {},
-  pendingTranslations: {}
+  pendingTranslations: {},
+  pendingTranslationText: "",
+  pendingTranslationSegmentId: 0,
+  translationTimer: null
 };
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -122,6 +126,7 @@ async function startCapture() {
   state.createdAt = Date.now();
   state.latestSegmentId = 0;
   state.pendingTranslations = {};
+  resetTranslationBatch();
 
   await sendMessageToTab(tab.id, { type: "SHOW_OVERLAY" });
 
@@ -183,6 +188,7 @@ async function stopCapture() {
   state.createdAt = null;
   state.latestSegmentId = 0;
   state.pendingTranslations = {};
+  resetTranslationBatch();
 
   return {
     ok: true,
@@ -202,6 +208,7 @@ function handleOffscreenStatus(message) {
     state.createdAt = null;
     state.latestSegmentId = 0;
     state.pendingTranslations = {};
+    resetTranslationBatch();
 
     if (typeof tabId === "number") {
       sendMessageToTab(tabId, { type: "HIDE_OVERLAY" }).catch((error) => {
@@ -245,9 +252,7 @@ function handleTranscriptUpdate(message) {
     return;
   }
 
-  translateFinalTranscript(message.text, payload.segmentId).catch((error) => {
-    console.warn("[LexiconAI] Translation request failed", error);
-  });
+  queueTranslation(message.text, payload.segmentId);
 }
 
 function handleOffscreenError(message) {
@@ -407,4 +412,52 @@ function normalizeLanguageCode(language) {
 
 function shouldTranslateSegment(language) {
   return normalizeLanguageCode(language).startsWith("fr");
+}
+
+function queueTranslation(text, segmentId) {
+  const normalizedText = text.trim();
+
+  if (!normalizedText) {
+    return;
+  }
+
+  if (state.pendingTranslationText) {
+    state.pendingTranslationText = `${state.pendingTranslationText} ${normalizedText}`.trim();
+  } else {
+    state.pendingTranslationText = normalizedText;
+  }
+
+  state.pendingTranslationSegmentId = segmentId;
+
+  if (state.translationTimer) {
+    clearTimeout(state.translationTimer);
+  }
+
+  state.translationTimer = setTimeout(() => {
+    flushQueuedTranslation().catch((error) => {
+      console.warn("[LexiconAI] Translation request failed", error);
+    });
+  }, TRANSLATION_BATCH_WINDOW_MS);
+}
+
+async function flushQueuedTranslation() {
+  const text = state.pendingTranslationText.trim();
+  const segmentId = state.pendingTranslationSegmentId;
+  resetTranslationBatch();
+
+  if (!text) {
+    return;
+  }
+
+  await translateFinalTranscript(text, segmentId);
+}
+
+function resetTranslationBatch() {
+  if (state.translationTimer) {
+    clearTimeout(state.translationTimer);
+  }
+
+  state.pendingTranslationText = "";
+  state.pendingTranslationSegmentId = 0;
+  state.translationTimer = null;
 }

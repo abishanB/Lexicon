@@ -21,6 +21,7 @@
     "#67e8f9",
     "#bef264"
   ];
+  const MIN_ALIGNMENT_COVERAGE = 0.2;
   const MIN_CONTENT_WORD_LENGTH = 4;
   const FRENCH_STOP_WORDS = new Set([
     "a",
@@ -218,8 +219,30 @@
     parlerai: ["speak"],
     apprendre: ["learn"],
     apprends: ["learn"],
+    apprenons: ["learn"],
     aime: ["like", "love"],
+    aimes: ["like", "love"],
     aimer: ["like", "love"],
+    appelles: ["call", "called", "name"],
+    appelle: ["call", "called", "name"],
+    appeler: ["call", "name"],
+    pose: ["ask"],
+    poser: ["ask"],
+    question: ["question"],
+    peux: ["can"],
+    peut: ["can"],
+    faire: ["do"],
+    weekend: ["weekend"],
+    joli: ["pretty", "nice"],
+    prenom: ["name"],
+    enchante: ["nice", "pleased"],
+    lire: ["read"],
+    regarder: ["watch"],
+    television: ["television", "tv"],
+    dormir: ["sleep"],
+    voir: ["see"],
+    amis: ["friends"],
+    francais: ["french"],
     aller: ["go"],
     vais: ["go", "going"],
     va: ["go", "goes"],
@@ -457,6 +480,8 @@
       });
     }
 
+    ensureMinimumCoverage(frenchWords, englishWords, alignments, usedEnglish);
+
     return alignments;
   }
 
@@ -539,6 +564,7 @@
   function stemWord(word) {
     return word
       .replace(/^(l|d|j|qu|c|n|s|m|t)'/, "")
+      .replace(/(aient|ions|iez|erai|eras|era|erons|erez|eront|ons|ent|ez|er|ir|re)$/, "")
       .replace(/(es|s)$/, "")
       .replace(/(ing|ed)$/, "");
   }
@@ -565,6 +591,34 @@
     }
 
     return word.length >= MIN_CONTENT_WORD_LENGTH;
+  }
+
+  function ensureMinimumCoverage(frenchWords, englishWords, alignments, usedEnglish) {
+    const minimumMatches = Math.ceil(Math.min(frenchWords.length, englishWords.length) * MIN_ALIGNMENT_COVERAGE);
+
+    if (alignments.length >= minimumMatches || minimumMatches === 0) {
+      return;
+    }
+
+    const usedFrench = new Set(alignments.flatMap((alignment) => alignment.fr));
+    const unusedFrench = frenchWords.filter((word) => !usedFrench.has(word.index));
+    const unusedEnglish = englishWords.filter((word) => !usedEnglish.has(word.index));
+    const extraPairsNeeded = minimumMatches - alignments.length;
+
+    for (let i = 0; i < extraPairsNeeded; i += 1) {
+      const frenchWord = unusedFrench[i];
+      const englishWord = unusedEnglish[i];
+
+      if (!frenchWord || !englishWord) {
+        break;
+      }
+
+      usedEnglish.add(englishWord.index);
+      alignments.push({
+        fr: [frenchWord.index],
+        en: [englishWord.index]
+      });
+    }
   }
 
   function showError(error) {
