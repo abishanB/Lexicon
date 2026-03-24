@@ -9,7 +9,11 @@
   const FINAL_SUBTITLE_HOLD_MS = 3000;
   const DEFAULT_UI_SETTINGS = {
     captionSize: 24,
-    captionOpacity: 84
+    captionOpacity: 84,
+    textColor: "white",
+    position: "bottom",
+    fontStyle: "normal",
+    textShadow: "none"
   };
   const WORD_MATCH_COLORS = [
     "#7dd3fc",
@@ -300,7 +304,8 @@
       return;
     }
 
-    if (!changes.captionSize && !changes.captionOpacity) {
+    if (!changes.captionSize && !changes.captionOpacity && !changes.textColor &&
+        !changes.position && !changes.fontStyle && !changes.textShadow) {
       return;
     }
 
@@ -358,10 +363,53 @@
     const captionSize = clamp(settings.captionSize, 18, 40);
     const captionOpacity = clamp(settings.captionOpacity, 50, 100) / 100;
     const translationSize = Math.max(15, Math.round(captionSize * 0.75));
+    const textColor = settings.textColor || "white";
+    const position = settings.position || "bottom";
+    const fontStyle = settings.fontStyle || "normal";
+    const textShadow = settings.textShadow || "none";
 
+    // Font size and opacity
     caption.style.fontSize = `${captionSize}px`;
     caption.style.background = `rgba(15, 23, 42, ${captionOpacity})`;
     translation.style.fontSize = `${translationSize}px`;
+
+    // Text color
+    const colorMap = {
+      white: "#ffffff",
+      yellow: "#fef08a",
+      cyan: "#06b6d4",
+      lime: "#84cc16"
+    };
+    const mappedColor = colorMap[textColor] || "#ffffff";
+    caption.style.color = mappedColor;
+
+    // Position
+    const positionMap = {
+      bottom: { bottom: "32px", top: "auto" },
+      middle: { bottom: "50%", top: "50%", transform: "translateX(-50%) translateY(50%)" },
+      top: { bottom: "auto", top: "32px" }
+    };
+    const pos = positionMap[position] || positionMap.bottom;
+    if (position === "middle") {
+      overlay.style.bottom = pos.bottom;
+      overlay.style.top = pos.top;
+      overlay.style.transform = pos.transform;
+    } else {
+      overlay.style.bottom = pos.bottom;
+      overlay.style.top = pos.top;
+      overlay.style.transform = "translateX(-50%)";
+    }
+
+    // Font weight
+    caption.style.fontWeight = fontStyle === "bold" ? "700" : "400";
+
+    // Text shadow
+    const shadowMap = {
+      none: "none",
+      light: "0 2px 8px rgba(0, 0, 0, 0.5)",
+      strong: "0 4px 16px rgba(0, 0, 0, 0.8), 2px 2px 0 rgba(0, 0, 0, 0.6)"
+    };
+    caption.style.textShadow = shadowMap[textShadow] || "none";
   }
 
   function updateSubtitle({ originalText, translatedText, isFinal, segmentId, sourceLanguage }) {

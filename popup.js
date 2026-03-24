@@ -6,10 +6,18 @@ const captionSizeInput = document.getElementById("captionSize");
 const captionOpacityInput = document.getElementById("captionOpacity");
 const captionSizeValue = document.getElementById("captionSizeValue");
 const captionOpacityValue = document.getElementById("captionOpacityValue");
+const textColorSelect = document.getElementById("textColor");
+const positionSelect = document.getElementById("position");
+const fontStyleSelect = document.getElementById("fontStyle");
+const textShadowSelect = document.getElementById("textShadow");
 const DEFAULT_SETTINGS = {
   sourceLanguage: "fr",
   captionSize: 24,
-  captionOpacity: 84
+  captionOpacity: 84,
+  textColor: "white",
+  position: "bottom",
+  fontStyle: "normal",
+  textShadow: "none"
 };
 
 startBtn.addEventListener("click", async () => {
@@ -49,6 +57,10 @@ stopBtn.addEventListener("click", async () => {
 sourceLanguageSelect.addEventListener("change", handleSettingsChange);
 captionSizeInput.addEventListener("input", handleSettingsChange);
 captionOpacityInput.addEventListener("input", handleSettingsChange);
+textColorSelect.addEventListener("change", handleSettingsChange);
+positionSelect.addEventListener("change", handleSettingsChange);
+fontStyleSelect.addEventListener("change", handleSettingsChange);
+textShadowSelect.addEventListener("change", handleSettingsChange);
 
 refreshState();
 loadSettings();
@@ -93,12 +105,20 @@ async function loadSettings() {
     const settings = {
       sourceLanguage: stored.sourceLanguage || DEFAULT_SETTINGS.sourceLanguage,
       captionSize: Number(stored.captionSize) || DEFAULT_SETTINGS.captionSize,
-      captionOpacity: Number(stored.captionOpacity) || DEFAULT_SETTINGS.captionOpacity
+      captionOpacity: Number(stored.captionOpacity) || DEFAULT_SETTINGS.captionOpacity,
+      textColor: stored.textColor || DEFAULT_SETTINGS.textColor,
+      position: stored.position || DEFAULT_SETTINGS.position,
+      fontStyle: stored.fontStyle || DEFAULT_SETTINGS.fontStyle,
+      textShadow: stored.textShadow || DEFAULT_SETTINGS.textShadow
     };
 
     sourceLanguageSelect.value = settings.sourceLanguage;
     captionSizeInput.value = String(settings.captionSize);
     captionOpacityInput.value = String(settings.captionOpacity);
+    textColorSelect.value = settings.textColor;
+    positionSelect.value = settings.position;
+    fontStyleSelect.value = settings.fontStyle;
+    textShadowSelect.value = settings.textShadow;
     updateSettingsLabels(settings);
   } catch (error) {
     console.error("[LexiconAI] Failed to load settings", error);
@@ -110,7 +130,11 @@ async function handleSettingsChange() {
   const settings = {
     sourceLanguage: sourceLanguageSelect.value,
     captionSize: Number(captionSizeInput.value),
-    captionOpacity: Number(captionOpacityInput.value)
+    captionOpacity: Number(captionOpacityInput.value),
+    textColor: textColorSelect.value,
+    position: positionSelect.value,
+    fontStyle: fontStyleSelect.value,
+    textShadow: textShadowSelect.value
   };
 
   updateSettingsLabels(settings);
