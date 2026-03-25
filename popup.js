@@ -87,7 +87,13 @@ function updateFromState(state) {
   }
 
   if (state.isRecording) {
-    const selectedLanguage = state.selectedSourceLanguage === "ja" ? "Japanese" : "French";
+    const languageNames = {
+      "fr": "French",
+      "ja": "Japanese",
+      "es": "Spanish",
+      "de": "German"
+    };
+    const selectedLanguage = languageNames[state.selectedSourceLanguage] || "French";
     setStatus(`Recording ${selectedLanguage} audio and streaming to Deepgram`);
     return;
   }

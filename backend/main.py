@@ -52,9 +52,45 @@ def get_ja_to_en_translation():
     return None
 
 
+def get_es_to_en_translation():
+  installed_languages = translate.get_installed_languages()
+  from_language = next(
+    (language for language in installed_languages if language.code == "es"), None)
+  to_language = next(
+    (language for language in installed_languages if language.code == "en"), None)
+
+  if from_language is None or to_language is None:
+    return None
+
+  try:
+    return from_language.get_translation(to_language)
+  except Exception:
+    return None
+
+
+def get_de_to_en_translation():
+  installed_languages = translate.get_installed_languages()
+  from_language = next(
+    (language for language in installed_languages if language.code == "de"), None)
+  to_language = next(
+    (language for language in installed_languages if language.code == "en"), None)
+
+  if from_language is None or to_language is None:
+    return None
+
+  try:
+    return from_language.get_translation(to_language)
+  except Exception:
+    return None
+
+
 def get_translation_for_language(source_language):
   if source_language == "ja":
     return get_ja_to_en_translation()
+  if source_language == "es":
+    return get_es_to_en_translation()
+  if source_language == "de":
+    return get_de_to_en_translation()
 
   return get_fr_to_en_translation()
 
@@ -65,6 +101,8 @@ async def lifespan(app: FastAPI):
 
   translation = get_fr_to_en_translation()
   japanese_translation = get_ja_to_en_translation()
+  spanish_translation = get_es_to_en_translation()
+  german_translation = get_de_to_en_translation()
   installed_codes = [
     language.code for language in translate.get_installed_languages()]
   logger.info("Installed Argos languages: %s", installed_codes)
@@ -84,6 +122,24 @@ async def lifespan(app: FastAPI):
     sample_text = "こんにちは"
     sample_translation = japanese_translation.translate(sample_text)
     logger.info("Argos Japanese -> English model ready")
+    logger.info("Sample translation check: %s -> %s",
+                sample_text, sample_translation)
+
+  if spanish_translation is None:
+    logger.warning("Argos Spanish -> English model is not installed yet")
+  else:
+    sample_text = "Hola mundo"
+    sample_translation = spanish_translation.translate(sample_text)
+    logger.info("Argos Spanish -> English model ready")
+    logger.info("Sample translation check: %s -> %s",
+                sample_text, sample_translation)
+
+  if german_translation is None:
+    logger.warning("Argos German -> English model is not installed yet")
+  else:
+    sample_text = "Hallo Welt"
+    sample_translation = german_translation.translate(sample_text)
+    logger.info("Argos German -> English model ready")
     logger.info("Sample translation check: %s -> %s",
                 sample_text, sample_translation)
 
@@ -107,12 +163,16 @@ app.add_middleware(
 async def health():
   french_translation = get_fr_to_en_translation()
   japanese_translation = get_ja_to_en_translation()
+  spanish_translation = get_es_to_en_translation()
+  german_translation = get_de_to_en_translation()
   return {
       "status": "ok",
       "translationAvailable": french_translation is not None,
       "supportedSourceLanguages": {
         "fr": french_translation is not None,
         "ja": japanese_translation is not None,
+        "es": spanish_translation is not None,
+        "de": german_translation is not None,
       },
       "targetLanguage": "en",
   }
@@ -126,8 +186,8 @@ async def translate_text(request: TranslationRequest):
   if not text:
     raise HTTPException(status_code=400, detail="Text is required")
 
-  if source_language not in {"fr", "ja"}:
-    raise HTTPException(status_code=400, detail="Only fr and ja are supported")
+  if source_language not in {"fr", "ja", "es", "de"}:
+    raise HTTPException(status_code=400, detail="Only fr, ja, es, and de are supported")
 
   translation = get_translation_for_language(source_language)
 
